@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Retribusi Pedagang</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-blue-600 text-white shadow-md py-4 px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold flex items-center gap-2">🪙 Retribusi Pedagang</h1>
+            <p class="text-xs text-blue-100">Sistem Pencatatan Iuran Harian & Transparansi Anggota</p>
+        </div>
+        <div class="flex items-center gap-3 bg-blue-700 p-2 rounded-lg border border-blue-500">
+            <span class="text-xs font-medium">Peran Aktif:</span>
+            <span id="badgeRole" class="bg-amber-400 text-slate-900 font-bold px-2.5 py-1 rounded text-xs">Publik / Anggota</span>
+            <button onclick="bukaModalLogin()" class="bg-white text-blue-600 hover:bg-blue-50 font-semibold px-3 py-1 rounded text-xs transition">Ganti Peran / Login</button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 gap-6">
+
+        <!-- Navigasi Tab / Tampilan -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap gap-3 justify-between items-center">
+            <div class="flex gap-2">
+                <button onclick="gantiTab('publik')" id="tabPublik" class="px-4 py-2 rounded-lg font-semibold text-sm bg-blue-600 text-white transition">📊 Laporan Publik</button>
+                <button onclick="gantiTab('petugas')" id="tabPetugas" class="px-4 py-2 rounded-lg font-semibold text-sm bg-slate-100 text-slate-600 hover:bg-slate-200 transition hidden">📝 Catat Harian (Petugas)</button>
+                <button onclick="gantiTab('owner')" id="tabOwner" class="px-4 py-2 rounded-lg font-semibold text-sm bg-slate-100 text-slate-600 hover:bg-slate-200 transition hidden">⚙️ Panel Owner</button>
+            </div>
+            <div id="infoAkses" class="text-xs text-slate-500 italic">Menampilkan laporan transparan untuk seluruh anggota.</div>
+        </div>
+
+        <!-- KONTEN 1: PUBLIK / ANGGOTA -->
+        <section id="sectionPublik" class="space-y-6">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                    <p class="text-xs font-semibold text-slate-400 uppercase">Total Pendapatan Bulan Ini</p>
+                    <h3 id="lblTotalBulan" class="text-2xl font-bold text-blue-600 mt-1">Rp 0</h3>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                    <p class="text-xs font-semibold text-slate-400 uppercase">Total Pedagang Terdaftar</p>
+                    <h3 id="lblTotalPedagang" class="text-2xl font-bold text-slate-700 mt-1">0 Orang</h3>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <p class="text-xs font-semibold text-slate-400 uppercase">Filter Periode Laporan</p>
+                    <div class="flex gap-2 mt-2">
+                        <select id="filterBulan" onchange="renderPublik()" class="border rounded px-2 py-1 text-sm bg-slate-50 w-full">
+                            <option value="1">Januari</option><option value="2">Februari</option><option value="3">Maret</option>
+                            <option value="4">April</option><option value="5">Mei</option><option value="6">Juni</option>
+                            <option value="7">Juli</option><option value="8">Agustus</option><option value="9">September</option>
+                            <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
+                        </select>
+                        <select id="filterTahun" onchange="renderPublik()" class="border rounded px-2 py-1 text-sm bg-slate-50 w-28">
+                            <option value="2026">2026</option><option value="2027">2027</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 border-b border-slate-100 font-bold text-slate-700 flex justify-between items-center">
+                    <span>Riwayat Transaksi & Pembayaran</span>
+                    <button onclick="renderPublik()" class="text-xs text-blue-600 hover:underline">🔄 Segarkan Data</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 border-b">
+                                <th class="p-3">Tanggal</th>
+                                <th class="p-3">Nama Pedagang</th>
+                                <th class="p-3">Kios / Lapak</th>
+                                <th class="p-3">Status</th>
+                                <th class="p-3 text-right">Jumlah (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelTransaksiPublik">
+                            <!-- Data akan dimuat otomatis -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- KONTEN 2: PETUGAS RETRIBUSI -->
+        <section id="sectionPetugas" class="space-y-6 hidden">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">Form Pencatatan Iuran Harian</h2>
+                        <p class="text-xs text-slate-500">Centang pedagang yang sudah membayar iuran pada tanggal yang dipilih.</p>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-600 block mb-1">Pilih Tanggal Penarikan:</label>
+                        <input type="date" id="inputTanggal" onchange="renderPetugasForm()" class="border rounded-lg px-3 py-1.5 text-sm bg-slate-50 font-medium">
+                    </div>
+                </div>
+
+                <div id="containerFormPetugas" class="space-y-3">
+                    <!-- List pedagang harian -->
+                </div>
+
+                <button onclick="simpanTransaksiHarian()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition shadow-sm">
+                    💾 Simpan Perubahan Data Harian
+                </button>
+            </div>
+        </section>
+
+        <!-- KONTEN 3: OWNER -->
+        <section id="sectionOwner" class="space-y-6 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Form Tambah Pedagang -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4 h-fit">
+                    <h2 class="text-lg font-bold text-slate-800 border-b pb-2">➕ Tambah Pedagang Baru</h2>
+                    <form onsubmit="tambahPedagang(event)" class="space-y-3">
+                        <div>
+                            <label class="text-xs font-medium text-slate-600">Nama Lengkap Pedagang</label>
+                            <input type="text" id="namaPedagang" required class="w-full border rounded-lg px-3 py-2 text-sm mt-1 bg-slate-50" placeholder="Contoh: Pak Budi">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-slate-600">Nomor / Nama Kios</label>
+                            <input type="text" id="kiosPedagang" class="w-full border rounded-lg px-3 py-2 text-sm mt-1 bg-slate-50" placeholder="Contoh: Kios A-12">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-slate-600">Tarif Iuran Harian (Rp)</label>
+                            <input type="number" id="tarifPedagang" value="5000" step="500" min="500" required class="w-full border rounded-lg px-3 py-2 text-sm mt-1 bg-slate-50">
+                        </div>
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 rounded-lg text-sm transition">
+                            Tambah ke Database
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Daftar & Hapus Pedagang -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                    <h2 class="text-lg font-bold text-slate-800 border-b pb-2">📋 Kelola Data Pedagang Terdaftar</h2>
+                    <div class="overflow-x-auto max-h-[400px]">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-600 border-b sticky top-0">
+                                    <th class="p-3">Nama</th>
+                                    <th class="p-3">Kios</th>
+                                    <th class="p-3">Tarif</th>
+                                    <th class="p-3 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelKelolaPedagang">
+                                <!-- Data pedagang -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal Login / Ganti Peran -->
+    <div id="modalLogin" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden justify-center items-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl space-y-4">
+            <h3 class="text-lg font-bold text-slate-800">Pilih Peran & Akses</h3>
+            <p class="text-xs text-slate-500">Silakan pilih peran Anda. Petugas dan Owner memerlukan PIN keamanan.</p>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs font-semibold text-slate-600">Pilih Peran</label>
+                    <select id="selectRole" onchange="handleRoleSelect()" class="w-full border rounded-lg px-3 py-2 text-sm mt-1 bg-slate-50">
+                        <option value="publik">Publik / Anggota (Tanpa PIN)</option>
+                        <option value="petugas">Petugas Retribusi</option>
+                        <option value="owner">Owner / Admin</option>
+                    </select>
+                </div>
+
+                <div id="wrapperPin" class="hidden">
+                    <label class="text-xs font-semibold text-slate-600">Masukkan PIN Keamanan</label>
+                    <input type="password" id="inputPin" placeholder="Masukkan PIN..." class="w-full border rounded-lg px-3 py-2 text-sm mt-1 bg-slate-50">
+                    <p id="pesanErrorPin" class="text-xs text-red-500 mt-1 hidden">PIN Salah!</p>
+                </div>
+            </div>
+
+            <div class="flex gap-2 pt-2">
+                <button onclick="tutupModalLogin()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 rounded-lg text-sm transition">Batal</button>
+                <button onclick="prosesLogin()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg text-sm transition">Masuk</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 text-xs text-slate-400 border-t mt-auto">
+        Aplikasi Retribusi Mandiri &bull; Data tersimpan otomatis di perangkat browser.
+    </footer>
+
+    <!-- JavaScript Aplikasi -->
+    <script>
+        // Inisialisasi Data Awal di localStorage jika belum ada
+        if (!localStorage.getItem('retribusi_pedagang')) {
+            const defaultPedagang = [
+                { id: 1, nama: "Bpk. Slamet", kios: "Kios A-1", tarif: 5000 },
+                { id: 2, nama: "Ibu Siti", kios: "Kios A-2", tarif: 5000 },
+                { id: 3, nama: "Cak Mat", kios: "Kios B-5", tarif: 4000 }
+            ];
+            localStorage.setItem('retribusi_pedagang', JSON.stringify(defaultPedagang));
+        }
+
+        if (!localStorage.getItem('retribusi_transaksi')) {
+            localStorage.setItem('retribusi_transaksi', JSON.stringify([]));
+        }
+
+        // State Aplikasi
+        let currentRole = 'publik'; // publik, petugas, owner
+        const PIN_PETUGAS = "5678";
+        const PIN_OWNER = "1234";
+
+        // Set default tanggal hari ini di form petugas
+        document.getElementById('inputTanggal').valueAsDate = new Date();
+        document.getElementById('filterBulan').value = new Date().getMonth() + 1;
+
+        // Jalankan render awal
+        renderPublik();
+
+        function gantiTab(tab) {
+            document.getElementById('sectionPublik').classList.add('hidden');
+            document.getElementById('sectionPetugas').classList.add('hidden');
+            document.getElementById('sectionOwner').classList.add('hidden');
+            
+            document.getElementById('tabPublik').className = "px-4 py-2 rounded-lg font-semibold text-sm bg-slate-100 text-slate-600 hover:bg-slate-200 transition";
+            document.getElementById('tabPetugas').className = "px-4 py-2 rounded-lg font-semibold text-sm bg-slate-100 text-slate-600 hover:bg-slate-200 transition";
+            document.getElementById('tabOwner').className = "px-4 py-2 rounded-lg font-semibold text-sm bg-slate-100 text-slate-600 hover:bg-slate-200 transition";
+
+            if (tab === 'publik') {
+                document.getElementById('sectionPublik').classList.remove('hidden');
+                document.getElementById('tabPublik').className = "px-4 py-2 rounded-lg font-semibold text-sm bg-blue-600 text-white transition";
+                renderPublik();
+            } else if (tab === 'petugas') {
+                document.getElementById('sectionPetugas').classList.remove('hidden');
+                document.getElementById('tabPetugas').className = "px-4 py-2 rounded-lg font-semibold text-sm bg-blue-600 text-white transition";
+                renderPetugasForm();
+            } else if (tab === 'owner') {
+                document.getElementById('sectionOwner').classList.remove('hidden');
+                document.getElementById('tabOwner').className = "px-4 py-2 rounded-lg font-semibold text-sm bg-blue-600 text-white transition";
+                renderOwnerPanel();
+            }
+        }
+
+        // --- RENDER PUBLIK ---
+        function renderPublik() {
+            const transaksi = JSON.parse(localStorage.getItem('retribusi_transaksi')) || [];
+            const pedagang = JSON.parse(localStorage.getItem('retribusi_pedagang')) || [];
+            
+            const bulan = parseInt(document.getElementById('filterBulan').value);
+            const tahun = parseInt(document.getElementById('filterTahun').value);
+
+            document.getElementById('lblTotalPedagang').innerText = `${pedagang.length} Orang`;
+
+            // Filter transaksi berdasarkan bulan dan tahun
+            const filtered = transaksi.filter(t => {
+                const parts = t.tanggal.split('-'); // format YYYY-MM-DD
+                const tYear = parseInt(parts[0]);
+                const tMonth = parseInt(parts[1]);
+                return tYear === tahun && tMonth === bulan;
+            });
+
+            let totalBulan = filtered.filter(t => t.status === 'Lunas').reduce((acc, curr) => acc + curr.jumlah, 0);
+            document.getElementById('lblTotalBulan').innerText = `Rp ${totalBulan.toLocaleString('id-ID')}`;
+
+            const tbody = document.getElementById('tabelTransaksiPublik');
+            tbody.innerHTML = '';
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-400 italic">Belum ada data transaksi pada periode ini.</td></tr>`;
+                return;
+            }
+
+            // Urutkan tanggal terbaru
+            filtered.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+
+            filtered.forEach(t => {
+                const badge = t.status === 'Lunas' 
+                    ? '<span class="bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded text-xs">Lunas</span>'
+                    : '<span class="bg-rose-100 text-rose-800 font-semibold px-2.5 py-0.5 rounded text-xs">Belum</span>';
+                
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-slate-50">
+                        <td class="p-3">${t.tanggal}</td>
+                        <td class="p-3 font-medium">${t.namaPedagang}</td>
+                        <td class="p-3 text-slate-500">${t.kios}</td>
+                        <td class="p-3">${badge}</td>
+                        <td class="p-3 text-right font-semibold">Rp ${t.jumlah.toLocaleString('id-ID')}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // --- RENDER PETUGAS ---
+        function renderPetugasForm() {
+            const selectedDate = document.getElementById('inputTanggal').value;
+            const pedagang = JSON.parse(localStorage.getItem('retribusi_pedagang')) || [];
+            const transaksi = JSON.parse(localStorage.getItem('retribusi_transaksi')) || [];
+
+            const container = document.getElementById('containerFormPetugas');
+            container.innerHTML = '';
+
+            if (pedagang.length === 0) {
+                container.innerHTML = `<p class="text-sm text-slate-400 italic">Belum ada pedagang terdaftar. Minta Owner untuk menambahkan pedagang.</p>`;
+                return;
+            }
+
+            pedagang.forEach(p => {
+                // Cek apakah sudah ada transaksi pada tanggal ini untuk pedagang ini
+                const existing = transaksi.find(t => t.pedagangId === p.id && t.tanggal === selectedDate);
+                const isLunas = existing ? existing.status === 'Lunas' : false;
+
+                container.innerHTML += `
+                    <div class="flex items-center justify-between p-3 bg-slate-50 border rounded-lg">
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-sm">${p.nama}</h4>
+                            <p class="text-xs text-slate-500">Kios: ${p.kios || '-'} | Tarif: Rp ${p.tarif.toLocaleString('id-ID')}</p>
+                        </div>
+                        <label class="flex items-center gap-2 cursor-pointer bg-white px-3 py-1.5 rounded-md border shadow-sm">
+                            <input type="checkbox" data-id="${p.id}" ${isLunas ? 'checked' : ''} class="w-4 h-4 text-blue-600 rounded checkbox-petugas">
+                            <span class="text-xs font-bold text-slate-700">Lunas</span>
+                        </label>
+                    </div>
+                `;
+            });
+        }
+
+        function simpanTransaksiHarian() {
+            const selectedDate = document.getElementById('inputTanggal').value;
+            if (!selectedDate) {
+                alert('Pilih tanggal terlebih dahulu!');
+                return;
+            }
+
+            let transaksi = JSON.parse(localStorage.getItem('retribusi_transaksi')) || [];
+            const pedagang = JSON.parse(localStorage.getItem('retribusi_pedagang')) || [];
+            const checkboxes = document.querySelectorAll('.checkbox-petugas');
+
+            checkboxes.forEach(cb => {
+                const pId = parseInt(cb.getAttribute('data-id'));
+                const pObj = pedagang.find(p => p.id === pId);
+                const isLunas = cb.checked;
+                const statusStr = isLunas ? 'Lunas' : 'Belum';
+                const jumlahVal = isLunas ? pObj.tarif : 0;
+
+                // Hapus data lama di tanggal & pedagang yang sama jika ada
+                transaksi = transaksi.filter(t => !(t.pedagangId === pId && t.tanggal === selectedDate));
+
+                // Masukkan data baru
+                transaksi.push({
+                    pedagangId: pId,
+                    namaPedagang: pObj.nama,
+                    kios: pObj.kios || '-',
+                    tanggal: selectedDate,
+                    status: statusStr,
+                    jumlah: jumlahVal
+                });
+            });
+
+            localStorage.setItem('retribusi_transaksi', JSON.stringify(transaksi));
+            alert('Data retribusi harian berhasil disimpan!');
+            renderPublik();
+        }
+
+        // --- RENDER OWNER ---
+        function renderOwnerPanel() {
+            const pedagang = JSON.parse(localStorage.getItem('retribusi_pedagang')) || [];
+            const tbody = document.getElementById('tabelKelolaPedagang');
+            tbody.innerHTML = '';
+
+            if (pedagang.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400 italic">Belum ada pedagang.</td></tr>`;
+                return;
+            }
+
+            pedagang.forEach(p => {
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-slate-50">
+                        <td class="p-3 font-medium">${p.nama}</td>
+                        <td class="p-3 text-slate-500">${p.kios || '-'}</td>
+                        <td class="p-3">Rp ${p.tarif.toLocaleString('id-ID')}</td>
+                        <td class="p-3 text-center">
+                            <button onclick="hapusPedagang(${p.id})" class="bg-rose-50 text-rose-600 hover:bg-rose-100 px-2.5 py-1 rounded text-xs font-semibold transition">Hapus</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function tambahPedagang(e) {
+            e.preventDefault();
+            const nama = document.getElementById('namaPedagang').value;
+            const kios = document.getElementById('kiosPedagang').value;
+            const tarif = parseInt(document.getElementById('tarifPedagang').value);
+
+            let pedagang = JSON.parse(localStorage.getItem('retribusi_pedagang')) || [];
+            const newId = pedagang.length > 0 ? Math.max(...pedagang.map(p => p.id)) + 1 : 1;
+
+            pedagang.push({ id: newId, nama, kios, tarif });
+            localStorage.setItem('retribusi_pedagang', JSON.stringify(pedagang));
+
+            document.getElementById('namaPedagang').value = '';
+            document.getElementById('kiosPedagang').value = '';
+            renderOwnerPanel();
+            alert(`Pedagang ${nama} berhasil ditambahkan!`);
+        }
+
+        function hapusPedagang(id) {
+            if (confirm('Yakin ingin menghapus pedagang ini?')) {
+                let pedagang = JSON.parse(localStorage.getItem('retribusi_pedagang')) || [];
+                pedagang = pedagang.filter(p => p.id !== id);
+                localStorage.setItem('retribusi_pedagang', JSON.stringify(pedagang));
+                renderOwnerPanel();
+            }
+        }
+
+        // --- SISTEM LOGIN / HAK AKSES ---
+        function bukaModalLogin() {
+            document.getElementById('modalLogin').classList.remove('hidden');
+            document.getElementById('modalLogin').classList.add('flex');
+        }
+
+        function tutupModalLogin() {
+            document.getElementById('modalLogin').classList.remove('flex');
+            document.getElementById('modalLogin').classList.add('hidden');
+            document.getElementById('inputPin').value = '';
+            document.getElementById('pesanErrorPin').classList.add('hidden');
+        }
+
+        function handleRoleSelect() {
+            const role = document.getElementById('selectRole').value;
+            const wrapperPin = document.getElementById('wrapperPin');
+            if (role === 'publik') {
+                wrapperPin.classList.add('hidden');
+            } else {
+                wrapperPin.classList.remove('hidden');
+            }
+        }
+
+        function prosesLogin() {
+            const role = document.getElementById('selectRole').value;
+            const pin = document.getElementById('inputPin').value;
+            const errorEl = document.getElementById('pesanErrorPin');
+
+            if (role === 'petugas') {
+                if (pin === PIN_PETUGAS) {
+                    setAksesRole('Petugas Retribusi', 'petugas');
+                } else {
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+            } else if (role === 'owner') {
+                if (pin === PIN_OWNER) {
+                    setAksesRole('Owner', 'owner');
+                } else {
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+            } else {
+                setAksesRole('Publik / Anggota', 'publik');
+            }
+            tutupModalLogin();
+        }
+
+        function setAksesRole(labelName, roleKey) {
+            currentRole = roleKey;
+            document.getElementById('badgeRole').innerText = labelName;
+
+            // Tampilkan tombol tab sesuai role
+            if (roleKey === 'publik') {
+                document.getElementById('tabPetugas').classList.add('hidden');
+                document.getElementById('tabOwner').classList.add('hidden');
+                gantiTab('publik');
+            } else if (roleKey === 'petugas') {
+                document.getElementById('tabPetugas').classList.remove('hidden');
+                document.getElementById('tabOwner').classList.add('hidden');
+                gantiTab('petugas');
+            } else if (roleKey === 'owner') {
+                document.getElementById('tabPetugas').classList.remove('hidden');
+                document.getElementById('tabOwner').classList.remove('hidden');
+                gantiTab('owner');
+            }
+        }
+    </script>
+</body>
+</html>
